@@ -1,0 +1,7 @@
+-od"bin"
+-of"bin/Golo"
+
+-I"src"
+
+"src/org/golo/main.d"
+
