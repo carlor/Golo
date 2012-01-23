@@ -15,11 +15,58 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+module org.golo.main;
 
-import std.stdio;
+private {
+	import std.stdio;
+	import std.getopt;
+	import std.array;
+	
+	import org.golo.exceptions;
+	import org.golo.prefs;
+	import org.golo.source;
+}
+
+public:
+
+
 
 int main(string[] args) {
-	writeln("Hello, World!");
+	bool shouldShowHelp = false;
+	Prefs p;
+	getopt(
+		args,
+		"help|h", &shouldShowHelp,
+		"verbatim|V", &p.verbatim
+	);
+	if (shouldShowHelp) {
+		showHelp(args[0]);
+		return 0;
+	}
+	try {
+		if (args.length == 1) {
+			showHelp(args[0]);
+			return 1;
+		}
+		foreach (sfile; args) {
+			compile(sfile, p);
+		}
+	} catch (GoloException ge) {
+		stderr.writeln(ge.msg);
+		return 1;
+	}
 	return 0;
+}
+
+private:
+
+void compile(string fname, Prefs p) {
+	p.msg("compiling "~fname~"...");
+	Source src = new Source(fname, p);
+	src.compile();
+}
+
+void showHelp(string pname) {
+	writeln(replace(import("USAGE"), "$pname", pname));
 }
 

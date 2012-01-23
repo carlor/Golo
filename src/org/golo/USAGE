@@ -1,0 +1,8 @@
+Golo 0.0.1
+
+Usage: $pname [-h] <source-file>...
+
+Options:
+  -h, --help  shows this help
+
+
