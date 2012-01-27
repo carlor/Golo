@@ -4,4 +4,4 @@ This is Golo, a programming language experiment written in D2.
 To build:
 	dmd @build.rf
 
-	
+I'm using the DDT Eclipse plugin.	

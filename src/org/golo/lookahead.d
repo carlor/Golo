@@ -26,3 +26,18 @@ public class Lookahead(T) {
 	private T[] array;
 	private T sentinel;
 }
+
+unittest {
+	string[] arr = ["hi", "bye", "foo", "bar", "baz"];
+	Lookahead!string lah = new Lookahead!string(arr, "__END__");
+	assert(lah.get() == "hi");
+	assert(lah.get(1) == "bye");
+	lah.consume(4);
+	assert(lah.get() == "baz");
+	lah.consume();
+	assert(lah.get() == "__END__");
+	lah.consume(100);
+	assert(lah.get() == "__END__");
+}
+
+

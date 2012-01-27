@@ -1,7 +1,13 @@
 -od"bin"
--of"bin/Golo"
+-of"bin/golo"
+
+-J"src/org/golo"
+
 
 -I"src"
 
+"src/org/golo/exceptions.d"
+"src/org/golo/lookahead.d"
 "src/org/golo/main.d"
-
+"src/org/golo/prefs.d"
+"src/org/golo/source.d"
