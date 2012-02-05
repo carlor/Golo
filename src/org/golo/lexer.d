@@ -19,13 +19,20 @@
 module org.golo.lexer;
 
 private {
+	import std.stdio;
+	import std.uni;
 	import std.utf;
+	import core.vararg;
 	
 	import org.golo.exceptions;
 	import org.golo.lookahead;
 	import org.golo.prefs;
 	import org.golo.source;
 }
+
+private enum KeywordsToTypes = [
+	"import"d : TT.KwIMPORT
+];
 
 public class Lexer {
 	
@@ -129,7 +136,142 @@ public class Lexer {
 	}
 	
 	private void maybetoken() {
+		dchar c = characters.get();
+		if (isAlpha(c) || c == '_') {
+			keywordOrIdentifier();
+		} else if (c == '"')  {
+			stringLiteral();
+		} else if (c == '\'') {
+			charLiteral();
+		} else if (isNumber(c)) {
+			numLiteral();
+		} else {
+			operatorOrInvalid();
+		}
+	}
+	
+	private void keywordOrIdentifier() {
+		dstring str = [characters.get()];
 		characters.consume();
+		while(true) {
+			dchar c = characters.get();
+			if (isAlpha(c) || isNumber(c) || c == '_') {
+				str ~= c;
+				characters.consume();
+			} else {
+				break;
+			}
+		}
+		if (str in KeywordsToTypes) {
+			add(KeywordsToTypes[str], str);
+		} else if (str == "__EOF__") {
+			notdone = false;
+		} else {
+			add(TT.IDENTIFIER, str);
+		}
+	}
+	
+	private void stringLiteral() {
+		dstring lit = [characters.get()];
+		characters.consume();
+		while (true) {
+			dchar c = characters.get();
+			if (c == '\\') {
+				characters.consume(2);
+				continue;
+			} else if (c == END) {
+				error("String is unfinished");
+			} else {
+				lit ~= c;
+				characters.consume();
+				if (c == '"') break;
+			}
+		}
+		add(TT.LtSTRING, lit);
+	}
+	
+	private void charLiteral() {
+		todo = "char literals";
+	}
+	
+	private void numLiteral() {
+		todo = "num literals";
+	}
+	
+	private void operatorOrInvalid() {
+		dchar c = characters.get();
+		switch (c) {
+			// -- arithmetic ops --
+			case '+':
+				testForThese("++"d,TT.OpINC, "+="d,TT.OpADDEQ, "+"d,TT.OpADD);
+				break;
+			case '-':
+				testForThese("--"d,TT.OpDEC, "-="d,TT.OpDIFEQ, "-"d,TT.OpDIF); 
+				break;
+			case '*':
+				testForThese("*="d, TT.OpMULEQ, "*"d, TT.OpMUL);
+				break;
+			case '/':
+				testForThese("/="d, TT.OpDIVEQ, "/"d, TT.OpDIV);
+				break;
+			case '%':
+				testForThese("%="d, TT.OpMODEQ, "%"d, TT.OpMOD);
+				break;
+				
+			// -- comparison ops --
+			case '<':
+				testForThese("<="d, TT.OpLE, "<"d, TT.OpLT);
+				break;
+			case '>':
+				testForThese(">="d, TT.OpGE, ">"d, TT.OpGT);
+				break;
+			case '!':
+				testForThese("!="d, TT.OpNE);
+				break;
+				
+			// -- grouping --
+			case '(':
+				scop(c, TT.OpOPPAREN);
+				break;
+			case ')':
+				scop(c, TT.OpCLPAREN);
+				break;
+			case '{':
+				scop(c, TT.OpOPBLOCK);
+				break;
+			case '}':
+				scop(c, TT.OpCLBLOCK);
+				break;
+			case '[':
+				scop(c, TT.OpOPBRACK);
+				break;
+			case ']':
+				scop(c, TT.OpCLBRACK);
+				break;
+				
+			// -- misc --
+			case '=':
+				testForThese("==="d, TT.OpEEE, "=="d, TT.OpEE, "="d, TT.OpSET);
+				break;
+			case ',':
+				scop(c, TT.OpCOMMA);
+				break;
+			case ':':
+				scop(c, TT.OpCOLON);
+				break;
+			case ';':
+				scop(c, TT.OpSTSEP);
+				break;
+			case '.':
+				scop(c, TT.OpDOT);
+				break;
+			case '@':
+				scop(c, TT.OpATT);
+				break;
+			
+			default:
+				unrecognized([c]);
+		}
 	}
 	
 	private dstring newline() {
@@ -149,6 +291,45 @@ public class Lexer {
 				return [c1];
 			}
 		}
+	}
+	
+	
+	private void testForThese(T...)(dstring str, TokenType tt, T args) {
+		foreach(i, c; str) {
+			if (characters.get(i) != c) {
+				static if (args.length == 0) {
+					unrecognized([characters.get(0)]);
+				} else {
+					testForThese!(T[2 .. $])(args);
+				}
+				return;
+			}
+		}
+		add(tt, str);
+		characters.consume(str.length);
+	}
+	
+	private void scop(dchar c, TokenType tt) {
+		add(tt, [c]);
+		characters.consume();
+	}
+	
+	private void add(TokenType tt, dstring str) {
+		Token r = new Token();
+		r.line = linenum;
+		r.src = source;
+		r.type = tt;
+		r.str = str;
+		tokens ~= r;
+		writeln(str);
+	}
+	
+	@property private void todo() {
+		error("Program requires something as-of-yet unimplemented."d);
+	}
+	
+	@property private void todo(string msg) {
+		error(toUTF32(msg) ~ " have yet to be implemented");
 	}
 	
 	private void unrecognized(dstring badtoken) {
@@ -173,9 +354,48 @@ public class Lexer {
 
 /// By convention, TokenType is a type, TT.CONST is the value
 public enum TokenType {
-	KEYWORD,
-	INT_LITERAL,
+	IDENTIFIER,
 	
+	KwIMPORT,
+	
+	LtSTRING,
+	
+	OpADD,
+	OpDIF,
+	OpMUL,
+	OpDIV,
+	OpMOD,
+	
+	OpADDEQ,
+	OpDIFEQ,
+	OpMULEQ,
+	OpDIVEQ,
+	OpMODEQ,
+	
+	OpINC,
+	OpDEC,
+	
+	OpLT,
+	OpLE,
+	OpGT,
+	OpGE,
+	
+	OpEEE,
+	OpEE,
+	OpNE,
+	
+	OpOPPAREN,
+	OpCLPAREN,
+	OpOPBLOCK,
+	OpCLBLOCK,
+	OpOPBRACK,
+	OpCLBRACK,
+	
+	OpSET,
+	OpSTSEP,
+	OpDOT,
+	OpCOLON,
+	OpCOMMA,
 }
 
 alias TokenType TT;
@@ -183,6 +403,6 @@ alias TokenType TT;
 public class Token {
 	TokenType type;
 	dstring str;
-	int line;
+	ulong line;
 	Source src;
 }
