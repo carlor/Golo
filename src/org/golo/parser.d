@@ -11,14 +11,20 @@ private {
 public class ModuleParser {
     
     public this(Lexer lex, Prefs p) {
-        tokens = new Lookahead!Token(lex.getTokens());
+        tokens = new Lookahead!Token(lex.getTokens(), null);
         prefs = p;
         prefs.msg("Parsing "~lex.getSource().getFileName());
         parse();
     }
     
     private void parse() {
-        
+        while (tokens.get() !is null) {
+        	modularDec();
+        }
+    }
+    
+    private void modularDec() {
+    	// TODO
     }
     
     private Lookahead!Token tokens;
