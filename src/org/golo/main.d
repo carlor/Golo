@@ -18,13 +18,13 @@
 module org.golo.main;
 
 private {
-	import std.stdio;
-	import std.getopt;
-	import std.array;
-	
-	import org.golo.exceptions;
-	import org.golo.prefs;
-	import org.golo.source;
+    import std.stdio;
+    import std.getopt;
+    import std.array;
+    
+    import org.golo.exceptions;
+    import org.golo.prefs;
+    import org.golo.source;
 }
 
 public:
@@ -32,41 +32,41 @@ public:
 
 
 int main(string[] args) {
-	bool shouldShowHelp = false;
-	Prefs p;
-	getopt(
-		args,
-		"help|h", &shouldShowHelp,
-		"verbatim|V", &p.verbatim
-	);
-	if (shouldShowHelp) {
-		showHelp(args[0]);
-		return 0;
-	}
-	try {
-		if (args.length == 1) {
-			showHelp(args[0]);
-			return 1;
-		}
-		foreach (sfile; args) {
-			compile(sfile, p);
-		}
-	} catch (GoloException ge) {
-		stderr.writeln(ge.msg);
-		return 1;
-	}
-	return 0;
+    bool shouldShowHelp = false;
+    Prefs p;
+    getopt(
+        args,
+        "help|h", &shouldShowHelp,
+        "verbatim|V", &p.verbatim
+    );
+    if (shouldShowHelp) {
+        showHelp(args[0]);
+        return 0;
+    }
+    try {
+        if (args.length == 1) {
+            showHelp(args[0]);
+            return 1;
+        }
+        foreach (sfile; args[1 .. $]) {
+            compile(sfile, p);
+        }
+    } catch (GoloException ge) {
+        stderr.writeln(ge.msg);
+        return 1;
+    }
+    return 0;
 }
 
 private:
 
 void compile(string fname, Prefs p) {
-	p.msg("compiling "~fname~"...");
-	Source src = new Source(fname, p);
-	src.compile();
+    p.msg("compiling "~fname~"...");
+    Source src = new Source(fname, p);
+    src.compile();
 }
 
 void showHelp(string pname) {
-	writeln(replace(import("USAGE"), "$pname", pname));
+    writeln(replace(import("USAGE"), "$pname", pname));
 }
 

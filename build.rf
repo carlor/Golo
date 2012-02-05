@@ -7,7 +7,9 @@
 -I"src"
 
 "src/org/golo/exceptions.d"
+"src/org/golo/lexer.d"
 "src/org/golo/lookahead.d"
 "src/org/golo/main.d"
+"src/org/golo/parser.d"
 "src/org/golo/prefs.d"
 "src/org/golo/source.d"
