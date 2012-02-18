@@ -6,6 +6,7 @@
 
 -I"src"
 
+"src/org/golo/ast.d"
 "src/org/golo/exceptions.d"
 "src/org/golo/lexer.d"
 "src/org/golo/lookahead.d"

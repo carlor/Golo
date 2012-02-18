@@ -21,7 +21,6 @@ module org.golo.lexer;
 private {
     import std.uni;
     import std.utf;
-    import core.vararg;
     
     import org.golo.exceptions;
     import org.golo.lookahead;
@@ -30,7 +29,11 @@ private {
 }
 
 private enum KeywordsToTypes = [
-    "import"d : TT.KwIMPORT
+    "import"d    : TT.KwIMPORT,
+    "public"d    : TT.KwPUBLIC,
+    "protected"d : TT.KwPROTECTED,
+    "private"d   : TT.KwPRIVATE,
+    "static"d    : TT.KwSTATIC,
 ];
 
 public class Lexer {
@@ -262,7 +265,7 @@ public class Lexer {
                 scop(c, TT.OpCOLON);
                 break;
             case ';':
-                scop(c, TT.OpSTSEP);
+                scop(c, TT.OpSEMICOLON);
                 break;
             case '.':
                 scop(c, TT.OpDOT);
@@ -356,8 +359,14 @@ public class Lexer {
 /// By convention, TokenType is a type, TT.CONST is the value
 public enum TokenType {
     IDENTIFIER,
+    EOF,
     
     KwIMPORT,
+    
+    KwPUBLIC,
+    KwPROTECTED,
+    KwPRIVATE,
+    KwSTATIC,
     
     LtSTRING,
     
@@ -393,7 +402,7 @@ public enum TokenType {
     OpCLBRACK,
     
     OpSET,
-    OpSTSEP,
+    OpSEMICOLON,
     OpDOT,
     OpCOLON,
     OpCOMMA,
@@ -407,4 +416,8 @@ public class Token {
     dstring str;
     ulong line;
     Source src;
+    
+    string toString() {
+        return toUTF8(str) ~ " " ~ std.conv.to!string(type);
+    }
 }
