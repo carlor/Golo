@@ -41,7 +41,7 @@ public class Lexer {
     public this(Source src, Prefs p) {
         source = src;
         prefs = p;
-        characters = new Lookahead!dchar(src.getCharacters(), END);
+        characters = new Lookahead!(dchar)(src.getCharacters(), END);
         prefs.msg("Tokenizing "~src.getFileName()~"...");
         tokenize();
     }
@@ -347,7 +347,7 @@ public class Lexer {
     private Source source;
     private Prefs prefs;
     
-    private Lookahead!dchar characters;
+    private Lookahead!(dchar) characters;
     private Token[] tokens;
     
     private ulong linenum = 1;

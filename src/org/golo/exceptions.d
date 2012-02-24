@@ -23,12 +23,23 @@ private {
     import org.golo.source;
 }
 
+template ExceptionDescendant(string child, string parent="Exception") {
+    enum ExceptionDescendant 
+         = "class "~child~" : "~parent~" {"
+         ~"this(string m,string f=__FILE__,size_t l=__LINE__,Throwable n=null){"
+         ~"   super(m, f, l, n);"
+         ~"} }"
+         ;
+} 
+
+mixin(ExceptionDescendant!("GoloException"));
+/*
 public class GoloException : Exception {
     public this(string msg) {
         super(msg);
     }
 }
-
+*/
 public class LocationException : GoloException {
     public this(string msg, Source src, ulong linenum) {
         super(src.getFileName()~"("~to!string(linenum)~"): "~msg);

@@ -40,10 +40,17 @@ struct FullyQualifiedId {
     alias identifiers this;
 }
 
-// <atts> import <fqid>;
-class ImportDecleration {
-    this(Attributes a, FullyQualifiedId f) { atts = a; fqid = f; }
+abstract class Decleration {
     Attributes atts;
+}
+
+abstract class ModuleDecleration : Decleration {
+    
+}
+
+// <atts> import <fqid>;
+class ImportDecleration : ModuleDecleration {
+    this(Attributes a, FullyQualifiedId f) { atts = a; fqid = f; }
     FullyQualifiedId fqid;
 }
 

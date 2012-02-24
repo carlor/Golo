@@ -1,4 +1,4 @@
-/* lexer.d - turns the source code into tokens.
+/* parse.d - turns the source code into tokens.
  * Copyright (C) 2012 Nathan M. Swan
  * 
  * This program is free software: you can redistribute it and/or modify
@@ -80,21 +80,22 @@ public class ModuleParser {
     // until it encounters EOF, it adds modular declerations
     private void parse() {
         while (tokens.get(0) !is termin) {
-        	modularDec();
+        	mdecs ~= modularDec();
         }
     }
     
     // creates a module decleration
-    private void modularDec() {
+    private ModuleDecleration modularDec() {
         Attributes atts = readAttributes();
     	switch (tokens.get(0).type) {
     	    case TT.KwIMPORT:
-    	        importDecleration(atts);
+    	        return importDecleration(atts);
     	        break;
 	        default:
 	            std.stdio.writeln(tokens.get(0).type);
 	            error(`"`~toUTF8(tokens.get(0).str)~`"`~
 	                  " does not start a valid module decleration");
+	            assert(0);
     	} 
     }
     
@@ -193,5 +194,6 @@ public class ModuleParser {
     private Lookahead!Token tokens;
     private Prefs prefs;
     private Token termin;
+    private ModuleDecleration[] mdecs;
     
 }
