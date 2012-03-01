@@ -27,31 +27,143 @@ private {
  + $(D Lookahead!Param) is an infinite lookahead of, if Param is a range, a
  + Param, else an array of Params.
  +/
-public class Lookahead(Param) {
-    static if (isInputRange!Param) {
-        private alias Param R;
-        private alias ElementType!Param T;
-    } else {
-        private alias Param[] R;
-        private alias Param T;
-    }
+public interface Lookahead(Param) {
     
-    /// Initializes a lookahead for range that gives sentinel once the range is
-    /// empty.
-    public this(R range, T sentinel = T.init) {
-        this.range = range;
-        this.sentinel = sentinel;
+    public:
+    static if (isInputRange!Param) {
+        alias Param R;
+        alias ElementType!Param T;
+    } else {
+        alias Param[] R;
+        alias Param T;
     }
     
     /// Consumes howmuch of the buffer.
-    public void consume(size_t howmuch=1) {
+    void consume(size_t howmuch=1);
+    
+    /// Loads in the buffer and gets howmuch of it, or the sentinel. 
+    T get(size_t howmuch=0);
+    
+    /// Creates a new lookahead from the range that gives sentinel on empty.
+    static Lookahead!Param create(R range, T sentinel = T.init) {
         static if (isDynamicArray!R) {
-            if (howmuch < range.length) {
-                range = range[howmuch .. $];
-            } else {
-                range = [];
-            }
+            return new class Lookahead!(Param) {
+                private this() {
+                    _array = range;
+                    _sentinel = sentinel;
+                }
+                
+                public void consume(size_t howmuch=1) {
+                    if (howmuch < _array.length) {
+                        _array = _array[howmuch .. $];
+                    } else {
+                        _array = [];
+                    }
+                }
+                
+                public T get(size_t howmuch=0) {
+                    if (howmuch < _array.length) {
+                        return _array[howmuch];
+                    } else {
+                        return _sentinel;
+                    }
+                }
+                
+                private T[] _array;
+                private T _sentinel;
+            };
         } else {
+            return new class Lookahead!(Param) {
+                private this() {
+                    _range = range;
+                    _buffer = [];
+                    _sentinel = sentinel;
+                }
+                
+                public void consume(size_t howmuch=1) {
+                    if (howmuch < _buffer.length) {
+                        _buffer = _buffer[howmuch .. $];
+                    } else {
+                        howmuch -= _buffer.length;
+                        _buffer = [];
+                        while(howmuch-- && !_range.empty) {
+                            _range.popFront();
+                        }
+                    }
+                }
+                
+                public T get(size_t howmuch=0) {
+                    if (howmuch >= _buffer.length) {
+                        updateBuffer(howmuch+1);
+                    }
+                    if (_buffer.length <= howmuch) {
+                        return sentinel;
+                    } else {
+                        return _buffer[howmuch];
+                    }
+                }
+                
+                private void updateBuffer(size_t howmuch) {
+                    howmuch -= _buffer.length;
+                    while(howmuch && !_range.empty) {
+                        _buffer ~= _range.front;
+                        _range.popFront();
+                        howmuch--;
+                    }           
+                }     
+                
+                private R _range;
+                private T[] _buffer;
+                private T _sentinel;                           
+            };
+        }
+    }
+}
+/+
+
+    static if (isDynamicArray!R)
+     public class Lookahead {
+        /// Initializes a lookahead for range that gives sentinel once the 
+        /// range is empty.
+        public this(R range, T sentinel = T.init) {
+            this.array = range;
+            this.sentinel = sentinel;
+        }
+        
+        /// Consumes howmuch of the buffer.
+        public void consume(size_t howmuch=1) {
+            if (howmuch < array.length) {
+                array = array[howmuch .. $];
+            } else {
+                array = [];
+            }
+        }
+        
+        /// Loads in the buffer and gets howmuch of it, or the sentinel.    
+        public void get(size_t howmuch=0) {
+            if (howmuch < array.length) {
+                return array[howmuch];
+            } else {
+                return sentinel;
+            }
+        }
+        
+        private T[] array;
+        private T sentinel;
+    }
+    
+    else
+     public class Lookahead {
+        /// Initializes a lookahead for range that gives sentinel once the 
+        /// range is empty.
+        public this(R range, T sentinel = T.init) {
+            this.array = range;
+            this.buffer = [];
+            this.sentinel = sentinel;
+        }
+        
+        /// Consumes howmuch of the buffer.
+        public void consume(size_t howmuch=1) {
             if (howmuch < buffer.length) {
                 buffer = buffer[howmuch .. $];
             } else {
@@ -62,49 +174,38 @@ public class Lookahead(Param) {
                 }
             }
         }
-    }
-    
-    /// Loads in the buffer and gets howmuch of it, or the sentinel.
-    public T get(size_t howmuch=0) {
-        static if (isDynamicArray!R) {
-            if (howmuch < range.length) {
-                return range[howmuch];
-            } else {
-                return sentinel;
-            }
-        } else {
+        
+        /// Loads in the buffer and gets howmuch of it, or the sentinel.    
+        public void get(size_t howmuch=0) {
             if (howmuch >= buffer.length) {
                 updateBuffer(howmuch+1);
             }
-            
-            std.stdio.writeln(buffer);
             if (buffer.length <= howmuch) {
                 return sentinel;
             } else {
                 return buffer[howmuch];
             }
         }
-    }
-    
-    static if (!isDynamicArray!R)
-    private void updateBuffer(size_t howmuch) {
-        howmuch -= buffer.length;
-        while(howmuch && !range.empty) {
-            buffer ~= range.front;
-            range.popFront();
-            howmuch--;
+        
+        private void updateBuffer(size_t howmuch) {
+            howmuch -= buffer.length;
+            while(howmuch && !range.empty) {
+                buffer ~= range.front;
+                range.popFront();
+                howmuch--;
+            }           
         }
         
+        private R range;
+        private T[] buffer;
+        private T sentinel;
     }
-    
-    private R range;
-    static if (!isDynamicArray!R) private T[] buffer = [];
-    private T sentinel;
-}
 
+}
++/
 unittest {
     string[] arr = ["hi", "bye", "foo", "bar", "baz"];
-    Lookahead!(string[]) lah = new Lookahead!(string[])(arr, "__END__");
+    Lookahead!(string[]) lah = Lookahead!(string[]).create(arr, "__END__");
     assert(lah.get() == "hi");
     assert(lah.get(1) == "bye");
     lah.consume(4);
@@ -121,7 +222,7 @@ unittest {
     }
     
     NumberRange nr;
-    Lookahead!(NumberRange) ns = new Lookahead!(NumberRange)(nr);
+    Lookahead!(NumberRange) ns = Lookahead!(NumberRange).create(nr);
     assert(ns.get(3) == 3);
     assert(ns.get(20) == 20);
     ns.consume(5);
